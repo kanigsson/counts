@@ -18,12 +18,7 @@ is
    is (Arr with delta Pos => Arr (Pos) + 1)
    with
      Ghost,
-     Pre  => Arr (Pos) < Length'Last,
-     Post =>
-       (for all C in Character =>
-          (if C = Pos
-           then Incr'Result (C) = Arr (C) + 1
-           else Incr'Result (C) = Arr (C)));
+     Pre  => Arr (Pos) < Length'Last;
 
    procedure Lem_Incr_Eq (Arr : Counts_Array; Up_To, Pos : Character)
    with
