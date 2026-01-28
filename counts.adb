@@ -92,13 +92,13 @@ is
    begin
       Lem_Sum_Zero (Counts, Character'Last);
       for I in Input'Range loop
+         pragma
+           Loop_Invariant
+             (for all C in Character => Counts (C) <= I - Input'First);
+         pragma Loop_Invariant (Sum (Counts) = I - Input'First);
          Tmp := Counts;
          Counts (Input (I)) := Counts (Input (I)) + 1;
          Lem_Incr_Neq (Tmp, Counts, Character'Last, Input (I));
-         pragma
-           Loop_Invariant
-             (for all C in Character => Counts (C) <= I - Input'First + 1);
-         pragma Loop_Invariant (Sum (Counts) = I - Input'First + 1);
       end loop;
       return Counts;
    end Char_Counts;
