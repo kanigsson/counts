@@ -76,6 +76,8 @@ Run GNAT Prove to verify all proof obligations:
 gnatprove -P test.gpr --level=2
 ```
 
+**Note**: This project was verified using SPARK Pro 26.1.
+
 ## Implementation Details
 
 The `Char_Counts` function uses a loop to iterate through the input buffer, incrementing the count for each character encountered. At each iteration:
