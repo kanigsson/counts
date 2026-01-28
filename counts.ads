@@ -19,11 +19,13 @@ is
        else Arr (Up_To) + Sum (Arr, Character'Pred (Up_To)))
    with
      Subprogram_Variant => (Decreases => Up_To),
+     Ghost,
      Post               =>
        Sum'Result <= Length'Last * (Character'Pos (Up_To) + 1);
 
    function Sum (Arr : Counts_Array) return Int32
-   is (Sum (Arr, Character'Last));
+   is (Sum (Arr, Character'Last))
+     with Ghost;
 
    function Char_Counts (Input : Buffer) return Counts_Array;
 
