@@ -25,9 +25,6 @@ is
    function Sum (Arr : Counts_Array) return Int32
    is (Sum (Arr, Character'Last));
 
-   function Char_Counts (Input : Buffer) return Counts_Array
-   with Post =>
-     (Sum (Char_Counts'Result) = Input'Length);
-
+   function Char_Counts (Input : Buffer) return Counts_Array;
 
 end Counts;

@@ -2,6 +2,9 @@ package body Counts
   with SPARK_Mode
 is
 
+   function Logic_Eq (X, Y : Counts_Array) return Boolean
+   is (X'First = Y'First and X'Last = Y'Last and X = Y)
+   with Annotate => (GNATprove, Logical_Equal);
    procedure Lem_Sum_Zero (Arr : Counts_Array; Up_To : Character)
    with
      Ghost,
@@ -11,31 +14,32 @@ is
        (for all C in Character'First .. Up_To => Arr (C) = 0),
      Post               => Sum (Arr, Up_To) = 0;
 
-   function Is_Incr (Arr1, Arr2 : Counts_Array; Pos : Character) return Boolean
-   is (for all C in Character =>
-         (if C = Pos then Arr1 (C) + 1 = Arr2 (C) else Arr1 (C) = Arr2 (C)));
+   function Incr (Arr : Counts_Array; Pos : Character) return Counts_Array
+   is (Arr with delta Pos => Arr (Pos) + 1)
+   with
+     Ghost,
+     Pre  => Arr (Pos) < Length'Last,
+     Post =>
+       (for all C in Character =>
+          (if C = Pos
+           then Incr'Result (C) = Arr (C) + 1
+           else Incr'Result (C) = Arr (C)));
 
-   procedure Lem_Incr_Eq (Arr1, Arr2 : Counts_Array; Up_To, Pos : Character)
+   procedure Lem_Incr_Eq (Arr : Counts_Array; Up_To, Pos : Character)
    with
      Ghost,
      Global             => null,
      Subprogram_Variant => (Decreases => Up_To),
-     Pre                =>
-       Pos > Up_To
-       and then Arr1 (Pos) < Length'Last
-       and then Is_Incr (Arr1, Arr2, Pos),
-     Post               => Sum (Arr2, Up_To) = Sum (Arr1, Up_To);
+     Pre                => Pos > Up_To and then Arr (Pos) < Length'Last,
+     Post               => Sum (Incr (Arr, Pos), Up_To) = Sum (Arr, Up_To);
 
-   procedure Lem_Incr_Neq (Arr1, Arr2 : Counts_Array; Up_To, Pos : Character)
+   procedure Lem_Incr_Neq (Arr : Counts_Array; Up_To, Pos : Character)
    with
      Ghost,
      Global             => null,
      Subprogram_Variant => (Decreases => Up_To),
-     Pre                =>
-       Pos <= Up_To
-       and then Arr1 (Pos) < Length'Last
-       and then Is_Incr (Arr1, Arr2, Pos),
-     Post               => Sum (Arr2, Up_To) = Sum (Arr1, Up_To) + 1;
+     Pre                => Pos <= Up_To and then Arr (Pos) < Length'Last,
+     Post               => Sum (Incr (Arr, Pos), Up_To) = Sum (Arr, Up_To) + 1;
 
    ------------------
    -- Lem_Sum_Zero --
@@ -54,30 +58,31 @@ is
    -- Lem_Incr_Eq --
    -----------------
 
-   procedure Lem_Incr_Eq (Arr1, Arr2 : Counts_Array; Up_To, Pos : Character) is
+   procedure Lem_Incr_Eq (Arr : Counts_Array; Up_To, Pos : Character) is
    begin
       if Up_To = Character'First then
          return;
       else
-         Lem_Incr_Eq (Arr1, Arr2, Character'Pred (Up_To), Pos);
+         Lem_Incr_Eq (Arr, Character'Pred (Up_To), Pos);
       end if;
    end Lem_Incr_Eq;
+
 
    ------------------
    -- Lem_Incr_Neq --
    ------------------
 
-   procedure Lem_Incr_Neq (Arr1, Arr2 : Counts_Array; Up_To, Pos : Character)
-   is
+   procedure Lem_Incr_Neq (Arr : Counts_Array; Up_To, Pos : Character) is
+      Tmp : Counts_Array := Incr (Arr, Pos);
    begin
       if Up_To = Pos then
          if Up_To = Character'First then
             return;
          else
-            Lem_Incr_Eq (Arr1, Arr2, Character'Pred (Up_To), Pos);
+            Lem_Incr_Eq (Arr, Character'Pred (Up_To), Pos);
          end if;
       else
-         Lem_Incr_Neq (Arr1, Arr2, Character'Pred (Up_To), Pos);
+         Lem_Incr_Neq (Arr, Character'Pred (Up_To), Pos);
       end if;
    end Lem_Incr_Neq;
 
@@ -87,7 +92,7 @@ is
 
    function Char_Counts (Input : Buffer) return Counts_Array is
       Counts : Counts_Array := [others => 0];
-      Tmp    : Counts_Array := Counts
+      Tmp    : Counts_Array
       with Ghost;
    begin
       Lem_Sum_Zero (Counts, Character'Last);
@@ -96,9 +101,10 @@ is
            Loop_Invariant
              (for all C in Character => Counts (C) <= I - Input'First);
          pragma Loop_Invariant (Sum (Counts) = I - Input'First);
+         Lem_Incr_Neq (Counts, Character'Last, Input (I));
          Tmp := Counts;
          Counts (Input (I)) := Counts (Input (I)) + 1;
-         Lem_Incr_Neq (Tmp, Counts, Character'Last, Input (I));
+         pragma Assert (Logic_Eq (Incr (Tmp, Input (I)), Counts));
       end loop;
       return Counts;
    end Char_Counts;
